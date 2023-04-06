@@ -1,136 +1,184 @@
 import React, { useState } from "react";
-import { Table, Input, Button, Space } from "antd";
-import {
-  EditOutlined,
-  DeleteOutlined,
-  CheckOutlined,
-  CloseOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { Table, Input, Tag, Space } from "antd";
+// import "antd/dist/antd.css";
+// import "./Todo.css";
 
 const Todo = () => {
-  const [todos, setTodos] = useState([]);
-  const [editingKey, setEditingKey] = useState("");
-  const [searchText, setSearchText] = useState("");
+  const [tasks, setTasks] = useState([
+    { id: 1, task: "Task 1", tags: ["Tag1", "Tag2"] },
+    { id: 2, task: "Task 2", tags: ["Tag1", "Tag3"] },
+    { id: 3, task: "Task 3", tags: ["Tag2", "Tag3"] },
+  ]);
+
+  const [editingTask, setEditingTask] = useState(null);
+  const [editingTag, setEditingTag] = useState(null);
+
+  const handleTaskChange = (e, taskId) => {
+    const updatedTasks = tasks.map((task) => {
+      if (task.id === taskId) {
+        return { ...task, task: e.target.value };
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+  };
+
+  const handleTagChange = (e, taskId, tagIndex) => {
+    const updatedTasks = tasks.map((task) => {
+      if (task.id === taskId) {
+        const updatedTags = [...task.tags];
+        updatedTags[tagIndex] = e.target.value;
+        return { ...task, tags: updatedTags };
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+  };
+
+  const handleAddTag = (taskId) => {
+    const updatedTasks = tasks.map((task) => {
+      if (task.id === taskId) {
+        return { ...task, tags: [...task.tags, ""] };
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+  };
+
+  const handleDeleteTag = (taskId, tagIndex) => {
+    const updatedTasks = tasks.map((task) => {
+      if (task.id === taskId) {
+        const updatedTags = [...task.tags];
+        updatedTags.splice(tagIndex, 1);
+        return { ...task, tags: updatedTags };
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+  };
+
+  const handleEditTask = (taskId) => {
+    setEditingTask(taskId);
+  };
+
+  const handleEditTag = (taskId, tagIndex) => {
+    setEditingTag({ taskId, tagIndex });
+  };
+
+  const handleSaveTask = () => {
+    setEditingTask(null);
+  };
+
+  const handleSaveTag = () => {
+    setEditingTag(null);
+  };
 
   const columns = [
     {
       title: "Task",
       dataIndex: "task",
       key: "task",
-      editable: true,
-      render: (text, record) => {
-        const isEditing = record.key === editingKey;
-        return isEditing ? (
-          <Input
-            value={text}
-            onChange={(e) => handleTaskChange(record.key, e.target.value)}
-            onPressEnter={() => handleSave(record.key)}
-            suffix={
-              <Space>
-                <CheckOutlined onClick={() => handleSave(record.key)} />
-                <CloseOutlined onClick={() => handleCancel()} />
-              </Space>
-            }
-          />
-        ) : (
-          text
-        );
-      },
+      render: (text, record) => (
+        <Input
+          value={text}
+          onChange={(e) => handleTaskChange(e, record.id)}
+          onBlur={handleSaveTask}
+          onPressEnter={handleSaveTask}
+          className={editingTask === record.id ? "editing" : ""}
+        />
+      ),
     },
     {
-      title: "Action",
-      key: "action",
-      render: (_, record) => {
-        const isEditing = record.key === editingKey;
-        return isEditing ? (
-          <Space>
-            <CheckOutlined onClick={() => handleSave(record.key)} />
-            <CloseOutlined onClick={() => handleCancel()} />
-          </Space>
-        ) : (
-          <Space>
-            <EditOutlined onClick={() => handleEdit(record)} />
-            <DeleteOutlined onClick={() => handleDelete(record.key)} />
-          </Space>
-        );
-      },
+      title: "Tags",
+      dataIndex: "tags",
+      key: "tags",
+      render: (tags, record) => (
+        <>
+          {tags.map((tag, index) => (
+            <Tag
+              key={index}
+              closable
+              onClose={() => handleDeleteTag(record.id, index)}
+              onClick={() => handleEditTag(record.id, index)}
+              className={
+                editingTag &&
+                editingTag.taskId === record.id &&
+                editingTag.tagIndex === index
+                  ? "editing"
+                  : ""
+              }
+            >
+              {editingTag &&
+              editingTag.taskId === record.id &&
+              editingTag.tagIndex === index ? (
+                <Input
+                  value={tag}
+                  onChange={(e) => handleTagChange(e, record.id, index)}
+                  onBlur={handleSaveTag}
+                  onPressEnter={handleSaveTag}
+                />
+              ) : (
+                tag
+              )}
+            </Tag>
+          ))}
+          {editingTag && editingTag.taskId === record.id && (
+            <Tag
+              onClick={() => handleAddTag(record.id)}
+              className="add-tag-btn"
+            >
+              + Add Tag
+            </Tag>
+          )}
+        </>
+      ),
     },
   ];
 
-  const handleTaskChange = (key, value) => {
-    const updatedTodos = todos.map((todo) => {
-      if (todo.key === key) {
-        return { ...todo, task: value };
-      }
-      return todo;
-    });
-    setTodos(updatedTodos);
-  };
-
-  const handleEdit = (record) => {
-    setEditingKey(record.key);
-  };
-
-  const handleSave = (key) => {
-    const updatedTodos = todos.map((todo) => {
-      if (todo.key === key) {
-        return { ...todo, editing: false };
-      }
-      return todo;
-    });
-    setTodos(updatedTodos);
-    setEditingKey("");
-  };
-
-  const handleCancel = () => {
-    setEditingKey("");
-  };
-
-  const handleDelete = (key) => {
-    const updatedTodos = todos.filter((todo) => todo.key !== key);
-    setTodos(updatedTodos);
-  };
-
-  const handleAdd = () => {
-    const newTodo = {
-      key: Date.now(),
-      task: "",
-      editing: true,
-    };
-    setTodos([...todos, newTodo]);
-    setEditingKey(newTodo.key);
-  };
-
-  const handleSearch = (e) => {
-    setSearchText(e.target.value);
-  };
-
-  const filteredTodos = todos.filter((todo) =>
-    todo.task.toLowerCase().includes(searchText.toLowerCase())
-  );
-
   return (
-    <div>
-      <Input
-        prefix={<SearchOutlined />}
-        placeholder="Search tasks"
-        value={searchText}
-        onChange={handleSearch}
-        style={{ marginBottom: "16px" }}
-      />
-      <Button type="primary" onClick={handleAdd}>
-        Add Task
-      </Button>
+    <div className="Todo">
+      <h1>To-Do List</h1>
       <Table
-        dataSource={filteredTodos}
+        dataSource={tasks}
         columns={columns}
+        rowKey="id"
         pagination={false}
-        rowKey="key"
-        rowClassName={(record) => (record.edit ? "editing" : "")}
         bordered
+        components={{
+          body: {
+            cell: EditableCell,
+          },
+        }}
       />
     </div>
+  );
+};
+
+const EditableCell = ({
+  editing,
+  dataIndex,
+  title,
+  inputType,
+  record,
+  index,
+  children,
+  ...restProps
+}) => {
+  const inputNode =
+    inputType === "tag" ? (
+      <Tag onClick={() => {}} className={editing ? "editing" : ""}>
+        {children}
+      </Tag>
+    ) : (
+      <Input
+        value={children}
+        onChange={() => {}}
+        className={editing ? "editing" : ""}
+      />
+    );
+
+  return (
+    <td {...restProps}>{editing ? <Space>{inputNode}</Space> : children}</td>
   );
 };
 

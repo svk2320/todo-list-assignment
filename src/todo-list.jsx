@@ -29,7 +29,7 @@ const TodoList = () => {
   const [newTag, setNewTag] = useState("");
   const [tasks, setTasks] = useState(data);
   const [dueDate, setDueDate] = useState(null);
-  const [tags, setTags] = useState(null);
+  const [tags, setTags] = useState([]);
   const [editingKey, setEditingKey] = useState("");
   const [searchText, setSearchText] = useState("");
 
@@ -60,7 +60,7 @@ const TodoList = () => {
       status: "OPEN",
       editable: true,
     };
-    setTags(newTag.toLowerCase());
+    setTags([newTag.toLowerCase()]);
     setTasks([...tasks, newTaskObj]);
     setNewTitle("");
     setNewDescription("");
@@ -144,6 +144,24 @@ const TodoList = () => {
   const filteredTasks = tasks.filter((todo) =>
     todo.task.toLowerCase().includes(searchText.toLowerCase())
   );
+
+  const filteredTags = () => {
+    const tagsInArr =
+      tags.indexOf(",") && typeof tags === "string" ? tags.split(",") : tags;
+    console.log("tagsInArr", tagsInArr);
+
+    let filteredTagsOptions = [];
+    //   return { text: x, value: x };
+
+    for (let i = 0; i < tagsInArr.length; i++) {
+    filteredTagsOptions.push({
+      text: tagsInArr[i],
+      value: tagsInArr[i],
+    });
+    }
+    console.log("filteredTagsOptions", [filteredTagsOptions]);
+    return [filteredTagsOptions];
+  };
 
   const columns = [
     {
@@ -270,50 +288,41 @@ const TodoList = () => {
     {
       title: "Tags",
       dataIndex: "tags",
-      filters: [
-        {
-          // text: 'OPEN',
-          // value: 'OPEN',
-        },
-      ],
+      filters: filteredTags(),
       onFilter: (value, record) => record.tags.indexOf(value) === 0,
       key: "tags",
-      render: (tags) => (
-        <>
-          {tags.map((tag) => {
-            let color = tag.length > 5 ? "geekblue" : "green";
-            if (tag === "urgent") {
-              color = "volcano";
+      editable: true,
+      render: (text, record) => {
+        const isEditing = record.key === editingKey;
+        const tags =
+          text.indexOf(",") && typeof text === "string"
+            ? text.split(",")
+            : text;
+        return isEditing ? (
+          <Input
+            value={text}
+            onChange={(e) =>
+              handleTaskChange("tags", record.key, e.target.value)
             }
-            return (
-              <Tag color={color} key={tag}>
-                {tag.toUpperCase()}
-              </Tag>
-            );
-          })}
-        </>
-      ),
-      // editable: true,
-      // render: (text, record) => {
-      //   const isEditing = record.key === editingKey;
-      //   return isEditing ? (
-      //     <Input
-      //       value={text}
-      //       onChange={(e) =>
-      //         handleTaskChange("tags", record.key, e.target.value)
-      //       }
-      //       onPressEnter={() => handleSave(record.key)}
-      //       // suffix={
-      //       //   <Space>
-      //       //     <CheckOutlined onClick={() => handleSave(record.key)} />
-      //       //     <CloseOutlined onClick={() => handleCancel()} />
-      //       //   </Space>
-      //       // }
-      //     />
-      //   ) : (
-      //     text
-      //   );
-      // },
+            onPressEnter={() => handleSave(record.key)}
+          />
+        ) : (
+          <>
+            {tags.map((tag) => {
+              let color = tag.length > 5 ? "geekblue" : "green";
+              if (tag === "urgent") {
+                color = "volcano";
+              }
+
+              return (
+                <Tag color={color} key={tag}>
+                  {tag.toUpperCase()}
+                </Tag>
+              );
+            })}
+          </>
+        );
+      },
     },
     {
       title: "Actions",
@@ -346,6 +355,13 @@ const TodoList = () => {
       </Title>
       <div className="adding-new-task-container">
         <Input
+          prefix={<SearchOutlined style={{marginRight: 5}} />}
+          placeholder="Search tasks"
+          value={searchText}
+          onChange={handleSearch}
+          style={{ width: 200, marginRight: 150 }}
+        />
+        <Input
           value={newTitle}
           onChange={handleNewTitleChange}
           placeholder="Add title"
@@ -375,14 +391,6 @@ const TodoList = () => {
         <Button onClick={handleAddTask} type="primary">
           Add
         </Button>
-      </div>
-      <div className="adding-new-task-container">
-        <Input
-          prefix={<SearchOutlined />}
-          placeholder="Search tasks"
-          value={searchText}
-          onChange={handleSearch}
-        />
       </div>
       <div className="tasks-container">
         <Table
